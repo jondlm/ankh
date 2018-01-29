@@ -1,7 +1,1 @@
-.cscope.files
-venv
-build
-dist
-ankh.egg-info/
-*.tgz
-*.pyc
+/ankh
