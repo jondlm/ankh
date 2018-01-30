@@ -16,15 +16,23 @@ import (
 var log = logrus.New()
 
 func main() {
+	app := cli.App("ankh", "AppNexus Kubernetes Helper")
+	app.Spec = "[-v]"
+
+	var (
+		verbose = app.BoolOpt("v verbose", false, "Verbose debug mode")
+	)
+
 	formatter := logrus.TextFormatter{
 		DisableTimestamp: true,
 	}
 	log.Out = os.Stdout
-	log.Level = logrus.DebugLevel
 	log.Formatter = &formatter
-
-	app := cli.App("ankh", "AppNexus Kubernetes Helper")
-	app.Spec = ""
+	if *verbose {
+		log.Level = logrus.DebugLevel
+	} else {
+		log.Level = logrus.InfoLevel
+	}
 
 	app.Command("apply", "Deploy an ankh file to a kubernetes cluster", func(cmd *cli.Cmd) {
 

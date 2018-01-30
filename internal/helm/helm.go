@@ -237,7 +237,7 @@ func Template(log *logrus.Logger, ankhFile ankh.AnkhFile, ankhConfig ankh.AnkhCo
 	depOutputCombined := ""
 	chartOutputCombined := ""
 
-	log.Debugf("beginning templating of %s", ankhFile.Path)
+	log.Infof("beginning templating of %s", ankhFile.Path)
 
 	if ankhFile.AdminDependenciesResolved != nil && ankhConfig.CurrentContext.ClusterAdmin == true {
 		log.Debugf("templating admin deps")
