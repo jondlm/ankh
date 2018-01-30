@@ -8,6 +8,12 @@
   version = "v1.0.3"
 
 [[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
@@ -34,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "41bc2ef7a0866b38cc3bbb955805d5a87c446bf36f71fb579d5468b7e14132b4"
+  inputs-digest = "56025e709833b5c69ac48b171416b6adfb52d580237e51431f1480c7621a6f4a"
   solver-name = "gps-cdcl"
   solver-version = 1
