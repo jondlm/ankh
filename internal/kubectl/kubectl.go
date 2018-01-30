@@ -6,6 +6,8 @@ import (
 	"os/exec"
 
 	"github.com/appnexus/ankh/internal/ankh"
+
+	"github.com/sirupsen/logrus"
 )
 
 type action string
@@ -15,9 +17,22 @@ const (
 	Delete action = "delete"
 )
 
-func Execute(act action, input string, ankhFile ankh.AnkhFile, ankhConfig ankh.AnkhConfig) (string, error) {
+func Execute(log *logrus.Logger, act action, dryRun *bool, input string, ankhFile ankh.AnkhFile, ankhConfig ankh.AnkhConfig) (string, error) {
 	ctx := ankhConfig.CurrentContext
-	kubectlArgs := []string{"kubectl", string(act), "--context", ctx.KubeContext, "--namespace", ankhFile.Namespace, "-f", "-"}
+
+	kubectlArgs := []string{
+		"kubectl", string(act),
+		"--context", ctx.KubeContext,
+		"--namespace", ankhFile.Namespace,
+	}
+
+	if *dryRun {
+		kubectlArgs = append(kubectlArgs, "--dry-run")
+	}
+
+	kubectlArgs = append(kubectlArgs, "-f", "-")
+
+	log.Fatal(kubectlArgs)
 
 	kubectlCmd := exec.Command(kubectlArgs[0], kubectlArgs[1:]...)
 

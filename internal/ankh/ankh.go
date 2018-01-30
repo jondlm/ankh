@@ -101,8 +101,12 @@ type Chart struct {
 	DefaultValues map[string]interface{} `yaml:"default_values"`
 	// Values is a map with keys that line up with `supported_environments`
 	Values map[string]interface{}
-	// ResourceProfiles is a map with keys that line up with `supported_resource_profiles`
+	// ResourceProfiles is a map with keys that line up with
+	// `supported_resource_profiles`
 	ResourceProfiles map[string]interface{} `yaml:"resource_profiles"`
+	// Secrets is a temporary resting place for secrets, eventually we want to
+	// load this from another secure source
+	Secrets map[string]interface{}
 }
 
 // Validate ensures that a chart is valid and requires a filled out AnkhConfig
@@ -120,6 +124,14 @@ func (c *Chart) Validate(ankhConfig AnkhConfig) error {
 		for k := range c.ResourceProfiles {
 			if !util.Contains(ankhConfig.SupportedResourceProfiles, k) {
 				return fmt.Errorf("unsupported resource profile '%s' found in ankh file `resource_profiles` for chart '%s'", k, c.Name)
+			}
+		}
+	}
+
+	if c.Secrets != nil {
+		for k := range c.Secrets {
+			if !util.Contains(ankhConfig.SupportedEnvironments, k) {
+				return fmt.Errorf("unsupported environment '%s' found in ankh file `secrets` for chart '%s'", k, c.Name)
 			}
 		}
 	}

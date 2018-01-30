@@ -12,6 +12,7 @@ import (
 
 	"github.com/appnexus/ankh/internal/ankh"
 	"github.com/appnexus/ankh/internal/util"
+	//"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
@@ -33,49 +34,8 @@ func templateChart(log *logrus.Logger, chart ankh.Chart, ankhFile ankh.AnkhFile,
 		return "", err
 	}
 
-	if chart.DefaultValues != nil {
-		defaultValuesPath := filepath.Join(tmpDir, "default-values.yaml")
-		defaultValuesBytes, err := yaml.Marshal(chart.DefaultValues)
-		if err != nil {
-			return "", err
-		}
-
-		if err := ioutil.WriteFile(defaultValuesPath, defaultValuesBytes, 0644); err != nil {
-			return "", err
-		}
-
-		helmArgs = append(helmArgs, "-f", defaultValuesPath)
-	}
-
-	if chart.Values != nil && chart.Values[ctx.Environment] != nil {
-		valuesPath := filepath.Join(tmpDir, "values.yaml")
-		valuesBytes, err := yaml.Marshal(chart.Values[ctx.Environment])
-		if err != nil {
-			return "", err
-		}
-
-		if err := ioutil.WriteFile(valuesPath, valuesBytes, 0644); err != nil {
-			return "", err
-		}
-
-		helmArgs = append(helmArgs, "-f", valuesPath)
-	}
-
-	if chart.ResourceProfiles != nil && chart.ResourceProfiles[ctx.ResourceProfile] != nil {
-		resourceProfilesPath := filepath.Join(tmpDir, "resource-profiles.yaml")
-		resourceProfilesBytes, err := yaml.Marshal(chart.ResourceProfiles[ctx.ResourceProfile])
-		if err != nil {
-			return "", err
-		}
-
-		if err := ioutil.WriteFile(resourceProfilesPath, resourceProfilesBytes, 0644); err != nil {
-			return "", err
-		}
-
-		helmArgs = append(helmArgs, "-f", resourceProfilesPath)
-	}
-
-	// Check if Global contains anything
+	// Check if Global contains anything and append `--set` flags to the helm
+	// command for each item
 	if ctx.Global != nil {
 		for _, item := range util.Collapse(ctx.Global, nil, nil) {
 			helmArgs = append(helmArgs, "--set", "global."+item)
@@ -86,7 +46,7 @@ func templateChart(log *logrus.Logger, chart ankh.Chart, ankhFile ankh.AnkhFile,
 	tarballPath := filepath.Join(filepath.Dir(ankhFile.Path), "charts", tarballFileName)
 	tarballURL := fmt.Sprintf("%s/%s", strings.TrimRight(ctx.HelmRegistryURL, "/"), tarballFileName)
 
-	// if we already have a dir, let's just copy it to a temp directory so we can
+	// If we already have a dir, let's just copy it to a temp directory so we can
 	// make changes to the ankh specific yaml files before passing them as `-f`
 	// args to `helm template`
 	if dirErr == nil {
@@ -131,13 +91,7 @@ func templateChart(log *logrus.Logger, chart ankh.Chart, ankhFile ankh.AnkhFile,
 	valuesPath := filepath.Join(chartPath, "ankh-values.yaml")
 	resourceProfilesPath := filepath.Join(chartPath, "ankh-resource-profiles.yaml")
 
-	// TODO: load secrets from another repo, eventually from vault
-	// secretsPath := filepath.Join(filepath.Dir(ankhFile.Path), "secrets", chart.Name+".yaml")
-	// _, secretsErr := os.Stat(secretsPath)
-	// if secretsErr == nil {
-	// 	helmArgs = append(helmArgs, "-f", secretsPath)
-	// }
-
+	// Load `values` from chart
 	_, valuesErr := os.Stat(valuesPath)
 	if valuesErr == nil {
 		if err := createReducedYAMLFile(valuesPath, ctx.Environment, ankhConfig.SupportedEnvironments); err != nil {
@@ -146,11 +100,72 @@ func templateChart(log *logrus.Logger, chart ankh.Chart, ankhFile ankh.AnkhFile,
 		helmArgs = append(helmArgs, "-f", valuesPath)
 	}
 
+	// Load `resource_profiles` from chart
 	_, resourceProfilesError := os.Stat(resourceProfilesPath)
 	if resourceProfilesError == nil {
 		if err := createReducedYAMLFile(resourceProfilesPath, ctx.ResourceProfile, ankhConfig.SupportedResourceProfiles); err != nil {
 			return "", fmt.Errorf("unable to process ankh-resource-profiles.yaml file for chart '%s': %v", chart.Name, err)
 		}
+		helmArgs = append(helmArgs, "-f", resourceProfilesPath)
+	}
+
+	// TODO: add validation for secrets
+	if chart.Secrets != nil {
+		secretsPath := filepath.Join(tmpDir, "secrets.yaml")
+		secretsBytes, err := yaml.Marshal(chart.Secrets[ctx.Environment])
+		if err != nil {
+			return "", err
+		}
+
+		if err := ioutil.WriteFile(secretsPath, secretsBytes, 0644); err != nil {
+			return "", err
+		}
+
+		helmArgs = append(helmArgs, "-f", secretsPath)
+	}
+
+	// Load `default_values` from ankhFile
+	if chart.DefaultValues != nil {
+		defaultValuesPath := filepath.Join(tmpDir, "default-values.yaml")
+		defaultValuesBytes, err := yaml.Marshal(chart.DefaultValues)
+		if err != nil {
+			return "", err
+		}
+
+		if err := ioutil.WriteFile(defaultValuesPath, defaultValuesBytes, 0644); err != nil {
+			return "", err
+		}
+
+		helmArgs = append(helmArgs, "-f", defaultValuesPath)
+	}
+
+	// Load `values` from ankhFile
+	if chart.Values != nil && chart.Values[ctx.Environment] != nil {
+		valuesPath := filepath.Join(tmpDir, "values.yaml")
+		valuesBytes, err := yaml.Marshal(chart.Values[ctx.Environment])
+		if err != nil {
+			return "", err
+		}
+
+		if err := ioutil.WriteFile(valuesPath, valuesBytes, 0644); err != nil {
+			return "", err
+		}
+
+		helmArgs = append(helmArgs, "-f", valuesPath)
+	}
+
+	// Load `resource_profiles` from ankhFile
+	if chart.ResourceProfiles != nil && chart.ResourceProfiles[ctx.ResourceProfile] != nil {
+		resourceProfilesPath := filepath.Join(tmpDir, "resource-profiles.yaml")
+		resourceProfilesBytes, err := yaml.Marshal(chart.ResourceProfiles[ctx.ResourceProfile])
+		if err != nil {
+			return "", err
+		}
+
+		if err := ioutil.WriteFile(resourceProfilesPath, resourceProfilesBytes, 0644); err != nil {
+			return "", err
+		}
+
 		helmArgs = append(helmArgs, "-f", resourceProfilesPath)
 	}
 

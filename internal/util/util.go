@@ -31,6 +31,17 @@ func Collapse(x interface{}, path []string, acc []string) []string {
 			arr = append(arr, Collapse(value, newPath, acc)...)
 		}
 		return arr
+	// TODO: this could probably be cleaned up, but basically we've got a mix of
+	// `interface{}` and `string` keys even though they are really all string
+	// keys.
+	case map[interface{}]interface{}:
+		var arr []string
+		for key, value := range x {
+			// This will result in a panic if we have something other than a string key.
+			newPath := append(path, key.(string))
+			arr = append(arr, Collapse(value, newPath, acc)...)
+		}
+		return arr
 	case bool:
 		return append(acc, strings.Join(path, ".")+"="+strconv.FormatBool(x))
 	case float64:

@@ -28,10 +28,11 @@ func main() {
 
 	app.Command("apply", "Deploy an ankh file to a kubernetes cluster", func(cmd *cli.Cmd) {
 
-		cmd.Spec = "[-f]"
+		cmd.Spec = "[-f] [--dry-run]"
 
 		var (
 			filename = cmd.StringOpt("f filename", "ankh.yaml", "Config file name")
+			dryRun   = cmd.BoolOpt("dry-run", false, "Perform a dry-run and don't actually apply anything to a cluster")
 		)
 
 		cmd.Action = func() {
@@ -46,7 +47,7 @@ func main() {
 
 			action := kubectl.Apply
 			log.Info("starting kubectl")
-			kubectlOutput, err := kubectl.Execute(action, helmOutput, config, ankhConfig)
+			kubectlOutput, err := kubectl.Execute(log, action, dryRun, helmOutput, config, ankhConfig)
 			check(err)
 
 			fmt.Println(kubectlOutput)
