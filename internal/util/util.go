@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/mattn/go-isatty"
+	"github.com/sirupsen/logrus"
 	//"github.com/davecgh/go-spew/spew"
 )
 
@@ -277,4 +280,47 @@ func MultiErrorFormat(errs []error) string {
 	}
 
 	return strings.Join(s, "\n")
+}
+
+type CustomFormatter struct{}
+
+func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	red := "\x1B[31m"
+	green := "\x1B[32m"
+	yellow := "\x1B[33m"
+	cyan := "\x1B[36m"
+	// blue := "\x1B[34m"
+	// magenta := "\x1B[35m"
+	// white := "\x1B[37m"
+	reset := "\x1B[0m"
+
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		red = ""
+		green = ""
+		yellow = ""
+		cyan = ""
+		// blue = ""
+		// magenta = ""
+		// white = ""
+		reset = ""
+	}
+
+	var level string
+
+	switch entry.Level {
+	case logrus.DebugLevel:
+		level = fmt.Sprintf("%sDEBUG%s", cyan, reset)
+	case logrus.InfoLevel:
+		level = fmt.Sprintf("%sINFO%s", green, reset)
+	case logrus.WarnLevel:
+		level = fmt.Sprintf("%sWARNING%s", yellow, reset)
+	case logrus.ErrorLevel:
+		level = fmt.Sprintf("%sERROR%s", red, reset)
+	case logrus.FatalLevel:
+		level = fmt.Sprintf("%sFATAL%s", red, reset)
+	case logrus.PanicLevel:
+		level = fmt.Sprintf("%sPANIC%s", red, reset)
+	}
+
+	return []byte(fmt.Sprintf("# %-8s %s\n", level, entry.Message)), nil
 }
